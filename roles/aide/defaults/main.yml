@@ -44,7 +44,6 @@ aide_excludes:
   - /etc/\.pwd\.lock$
   - /etc/ld\.so\.cache$     # ldconfig, every library update
   - /etc/udev/hwdb\.bin$
-  - /etc/audit/audit\.rules(\.prev)?$     # generated from rules.d (watched)
   - /etc/lvm/(archive|backup|cache)
   - /etc/letsencrypt/(archive|live|csr|keys|renewal)     # every renewal
   - /root/\.ssh/known_hosts(\.old)?$     # written by every ssh to a new host

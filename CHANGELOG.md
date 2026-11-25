@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+- Role `aide`: the default excludes name only files of the base system.
+
 ## 1.0.0
 
 - New role `auditd`: lean audit baseline with one weekly mail.
