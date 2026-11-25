@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0
+
+- The playbooks of the roles moved to `playbooks/` (`playbooks/auditd.yml`, `playbooks/aide.yml`).
+  Installed as a collection they run by name: `mojix_tech.automation.auditd`.
+
 ## 1.1.1
 
 - Removed the playbook `security_baseline`; every role has its own playbook.
