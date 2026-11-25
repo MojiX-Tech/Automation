@@ -10,21 +10,30 @@ README that says what it changes on the host.
 | [`auditd`](roles/auditd/README.md) | Lean audit baseline: who did what, which security files changed. One weekly mail, only when something is notable. |
 | [`aide`](roles/aide/README.md) | Lean file integrity check: one weekly mail, only for changes that no package update explains. |
 
-## Install
+## Use
 
-The repository is an Ansible collection, `mojix_tech.automation`:
+### From a checkout
+
+Every role has its own playbook in the top folder, named like the role:
+
+```bash
+git clone https://github.com/MojiX-Tech/Automation.git
+cd Automation
+ansible-playbook -i "server1.example.com," auditd.yml
+ansible-playbook -i "server1.example.com," aide.yml
+```
+
+Set a role's variables with `-e` or in your inventory, for example
+`-e auditd_report_email=admin@example.com`. Try it first with `--check --diff`.
+
+### As a collection
+
+The repository is also an Ansible collection, `mojix_tech.automation`:
 
 ```bash
 ansible-galaxy collection install git+https://github.com/MojiX-Tech/Automation.git
+ansible-galaxy collection install git+https://github.com/MojiX-Tech/Automation.git,v1.1.0   # a fixed version
 ```
-
-A fixed version:
-
-```bash
-ansible-galaxy collection install git+https://github.com/MojiX-Tech/Automation.git,v1.0.0
-```
-
-## Use
 
 ```yaml
 - hosts: all
@@ -33,21 +42,6 @@ ansible-galaxy collection install git+https://github.com/MojiX-Tech/Automation.g
     - role: mojix_tech.automation.auditd
       vars:
         auditd_report_email: admin@example.com
-    - role: mojix_tech.automation.aide
-      vars:
-        aide_report_email: admin@example.com
-```
-
-Or the ready playbook for both:
-
-```bash
-ansible-playbook -i inventory.ini mojix_tech.automation.security_baseline -e report_email=admin@example.com
-```
-
-Try a role on one host first:
-
-```bash
-ansible-playbook -i "server1.example.com," site.yml --check --diff
 ```
 
 ## Requirements
@@ -58,13 +52,14 @@ ansible-playbook -i "server1.example.com," site.yml --check --diff
 ## Layout
 
 ```
-galaxy.yml              collection name and version
+<role>.yml              one playbook per role, named like the role
 roles/<role>/           one directory per role, each with its own README
-playbooks/              ready playbooks that combine roles
+playbooks/              playbooks that combine roles
+galaxy.yml              collection name and version
 ```
 
 A new role goes into `roles/<name>/` with `defaults/`, `tasks/`, `meta/main.yml` and a README,
-and gets a line in the table above.
+gets its playbook `<name>.yml` and a line in the table above.
 
 ## Licence
 

@@ -1,0 +1,7 @@
+---
+# ansible-playbook -i "server1.example.com," aide.yml
+- name: (role = aide) lean file integrity check - which system files changed
+  hosts: all
+  become: true
+  roles:
+    - aide

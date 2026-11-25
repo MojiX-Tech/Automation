@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0
+
+- One playbook per role in the top folder: `auditd.yml`, `aide.yml`.
+
 ## 1.0.1
 
 - Role `aide`: the default excludes name only files of the base system.

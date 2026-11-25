@@ -1,0 +1,7 @@
+---
+# ansible-playbook -i "server1.example.com," auditd.yml
+- name: (role = auditd) lean audit baseline - who did what, which security files changed
+  hosts: all
+  become: true
+  roles:
+    - auditd
