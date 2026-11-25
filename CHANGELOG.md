@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- Removed the playbook `security_baseline`; every role has its own playbook.
+
 ## 1.1.0
 
 - One playbook per role in the top folder: `auditd.yml`, `aide.yml`.

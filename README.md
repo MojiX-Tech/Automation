@@ -32,7 +32,7 @@ The repository is also an Ansible collection, `mojix_tech.automation`:
 
 ```bash
 ansible-galaxy collection install git+https://github.com/MojiX-Tech/Automation.git
-ansible-galaxy collection install git+https://github.com/MojiX-Tech/Automation.git,v1.1.0   # a fixed version
+ansible-galaxy collection install git+https://github.com/MojiX-Tech/Automation.git,v1.1.1   # a fixed version
 ```
 
 ```yaml
@@ -54,7 +54,6 @@ ansible-galaxy collection install git+https://github.com/MojiX-Tech/Automation.g
 ```
 <role>.yml              one playbook per role, named like the role
 roles/<role>/           one directory per role, each with its own README
-playbooks/              playbooks that combine roles
 galaxy.yml              collection name and version
 ```
 
