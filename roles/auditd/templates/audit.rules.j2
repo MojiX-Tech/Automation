@@ -1,0 +1,16 @@
+# Managed by Ansible (role auditd) - local changes are overwritten
+
+# Delete all previous rules
+-D
+
+# Kernel backlog buffer
+-b {{ auditd_buffer_size }}
+
+# On failure: 1 = log to printk, never panic the host
+-f {{ auditd_fail_mode }}
+
+# Wait at most 60 s when the backlog is full
+--backlog_wait_time 60000
+
+# 1 = enabled, 2 = locked until reboot
+-e {{ auditd_enable_flag }}

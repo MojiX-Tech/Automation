@@ -1,0 +1,50 @@
+# Managed by Ansible (role auditd) - local changes are overwritten
+
+# Lean audit baseline - the SERVER, not the services on it. Two questions:
+#   1. Who did what?  -> every command of a logged-in user (auid set);
+#                        services, cron jobs and containers are NOT logged
+#   2. What changed?  -> writes to security-relevant files, by anyone
+# Watches only fire on writes; no rule on frequent syscalls (socket, open, ...).
+# auid!=-1 = "has a login session".
+# Search: ausearch --input-logs -k <key> -i     Summary: aureport --input-logs -k -i
+
+## Record types that are never written - records sent by userspace (PAM, sshd)
+## pass the "user" list, records of the kernel the "exclude" list
+{% for t in auditd_exclude_user_msgtypes %}
+-a never,user -F msgtype={{ t }}
+{% endfor %}
+{% for t in auditd_exclude_kernel_msgtypes %}
+-a always,exclude -F msgtype={{ t }}
+{% endfor %}
+
+## Audit tools
+-w /sbin/auditctl -p x -k audittools
+-w /sbin/auditd -p x -k audittools
+
+## Security-relevant files (auditd_watches + auditd_extra_watches, existing paths only)
+{% for w in auditd_watches_present %}
+-w {{ w.path }} -p wa -k {{ w.key }}
+{% endfor %}
+
+## Kernel modules and kexec
+-a always,exit -F arch=b64 -S init_module,finit_module,delete_module -k modules
+-a always,exit -F arch=b32 -S init_module,finit_module,delete_module -k modules
+-a always,exit -F arch=b64 -S kexec_load -k modules
+
+## Hostname, time and mounts changed by users (daemons are not logged)
+-a always,exit -F arch=b64 -S sethostname,setdomainname -k network
+-a always,exit -F arch=b64 -S adjtimex,settimeofday,clock_settime -F auid!=-1 -k time
+-a always,exit -F arch=b64 -S mount,umount2 -F auid!=-1 -k mount
+
+{% if auditd_unaudited_auids %}
+## Login IDs that are no people (auditd_unaudited_auids) - must stand BEFORE
+## the user_cmd rules: the first matching rule decides
+{% for a in auditd_unaudited_auids %}
+-a never,exit -F arch=b64 -S execve -F auid={{ a }}
+-a never,exit -F arch=b32 -S execve -F auid={{ a }}
+{% endfor %}
+
+{% endif %}
+## Commands run by logged-in users (incl. sudo/su - auid stays the login user)
+-a always,exit -F arch=b64 -S execve -F auid!=-1 -k user_cmd
+-a always,exit -F arch=b32 -S execve -F auid!=-1 -k user_cmd

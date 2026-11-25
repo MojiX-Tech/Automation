@@ -1,0 +1,126 @@
+---
+- name: Install auditd
+  ansible.builtin.apt:
+    name: "{{ auditd_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  tags: [auditd_install]
+
+- name: Configure auditd (log retention, behaviour on a full disk)
+  ansible.builtin.template:
+    src: auditd.conf.j2
+    dest: /etc/audit/auditd.conf
+    owner: root
+    group: root
+    mode: "0640"
+  notify: Restart auditd
+  tags: [auditd_config]
+
+- name: Kernel audit settings (buffer, failure mode, enable flag)
+  ansible.builtin.template:
+    src: audit.rules.j2
+    dest: /etc/audit/rules.d/audit.rules
+    owner: root
+    group: root
+    mode: "0640"
+  notify: Load audit rules
+  tags: [auditd_rules]
+
+- name: Check which watch paths exist on this host
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+    get_checksum: false
+  loop: "{{ auditd_watches + auditd_extra_watches }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: auditd_watch_stat
+  tags: [auditd_rules]
+
+- name: Keep only the watch paths that exist
+  ansible.builtin.set_fact:
+    auditd_watches_present: "{{ auditd_watch_stat.results | selectattr('stat.exists') | map(attribute='item') | list }}"
+  tags: [auditd_rules]
+
+# Who did what (commands of logged-in users) + writes to the security files.
+- name: Audit rules (lean baseline)
+  ansible.builtin.template:
+    src: custom.rules.j2
+    dest: /etc/audit/rules.d/custom.rules
+    owner: root
+    group: root
+    mode: "0640"
+  notify: Load audit rules
+  tags: [auditd_rules]
+
+- name: Cron jobs without a login session (not logged as user commands)
+  ansible.builtin.replace:
+    path: /etc/pam.d/cron
+    regexp: '^(session\s+required\s+pam_loginuid\.so)\s*$'
+    replace: '# \1    # off: auditd role, cron jobs are not user commands'
+  when: not (auditd_cron_loginuid | bool)
+  tags: [auditd_rules]
+
+- name: Cron jobs with a login session
+  ansible.builtin.replace:
+    path: /etc/pam.d/cron
+    regexp: '^#\s*(session\s+required\s+pam_loginuid\.so)\s+# off: auditd role.*$'
+    replace: '\1'
+  when: auditd_cron_loginuid | bool
+  tags: [auditd_rules]
+
+- name: SSH sessions of trusted machines without a login session
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/sshd
+    regexp: '^session.*pam_succeed_if\.so.*rhost in '
+    line: >-
+      session [success=1 default=ignore] pam_succeed_if.so quiet rhost in
+      {{ auditd_ssh_unaudited_hosts | join(':') }}    # auditd role: skip pam_loginuid
+    insertbefore: '^session\s+required\s+pam_loginuid\.so'
+    state: "{{ 'present' if auditd_ssh_unaudited_hosts else 'absent' }}"
+  tags: [auditd_rules]
+
+# Without linger root's user manager starts and stops with every root login,
+# and each start is logged as a handful of user commands.
+- name: Root's user manager keeps running (linger)
+  ansible.builtin.command: loginctl enable-linger root
+  args:
+    creates: /var/lib/systemd/linger/root
+  when: auditd_root_linger | bool
+  tags: [auditd_rules]
+
+# journald reads the kernel audit events too - a second copy of audit.log.
+- name: Journal with or without a copy of the audit events
+  ansible.builtin.systemd:
+    name: systemd-journald-audit.socket
+    state: "{{ 'started' if auditd_journald_copy | bool else 'stopped' }}"
+    masked: "{{ not (auditd_journald_copy | bool) }}"
+  notify: Restart journald
+  tags: [auditd_config]
+
+- name: Enable and start auditd
+  ansible.builtin.service:
+    name: auditd
+    enabled: true
+    state: started
+  tags: [auditd_install]
+
+- name: Weekly report script
+  ansible.builtin.template:
+    src: audit-report.sh.j2
+    dest: /usr/local/bin/audit-report
+    owner: root
+    group: root
+    mode: "0750"
+  when: auditd_report_enabled | bool
+  tags: [auditd_report]
+
+- name: Weekly report by mail
+  ansible.builtin.cron:
+    name: Weekly auditd report - security changes and lost events of the last 7 days by mail
+    weekday: "{{ auditd_report_weekday }}"
+    hour: "{{ auditd_report_hour }}"
+    minute: "{{ auditd_report_minute }}"
+    job: /usr/local/bin/audit-report > /dev/null
+    state: "{{ 'present' if auditd_report_enabled | bool else 'absent' }}"
+  tags: [auditd_report]

@@ -1,0 +1,15 @@
+---
+# Audit trail and file integrity check for every host of the inventory:
+#   ansible-playbook -i inventory.ini mojix_tech.automation.security_baseline -e report_email=admin@example.com
+- name: Security baseline - auditd and AIDE
+  hosts: all
+  become: true
+  vars:
+    report_email: root
+  roles:
+    - role: mojix_tech.automation.auditd
+      vars:
+        auditd_report_email: "{{ report_email }}"
+    - role: mojix_tech.automation.aide
+      vars:
+        aide_report_email: "{{ report_email }}"

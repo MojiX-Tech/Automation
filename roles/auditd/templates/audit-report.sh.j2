@@ -1,0 +1,135 @@
+#!/bin/bash
+# Managed by Ansible (role auditd) - local changes are overwritten
+
+# =================================================
+# Weekly auditd report
+#
+# Sends ONE mail, and only when something is notable:
+#   - changes to security files (auditd_report_alert_keys of the role)
+#   - lost audit events (the kernel counter grew since the last run)
+#   - auditd is NOT writing its log (stopped, or suspended after a full disk)
+# Failed logins and syscalls are always present on public hosts (scanners), so
+# they are only listed as numbers inside the mail, never a reason to send it.
+# =================================================
+
+email_address='{{ auditd_report_email }}'
+email_subject="[auditd] Weekly Report - $(hostname -f)"
+
+report=$(mktemp /tmp/audit-report.XXXXXX)
+trap 'rm -f "${report}"' EXIT
+lost_state='/var/lib/audit-report.lost'
+log_file='/var/log/audit/audit.log'
+
+date_time=$(date +"%Y-%m-%d %T")
+
+# --input-logs: read the log files, never stdin (cron / pipes)
+# --start week-ago: the logs keep weeks, the report covers the last week
+report_options='--input-logs --start week-ago'
+
+# Keys of the baseline that mean "a security setting changed"
+alert_keys='{{ auditd_report_alert_keys | join(' ') }}'
+
+if ! command -v mail > /dev/null 2>&1; then
+    echo "[ERROR] No 'mail' command on this host - the report cannot be sent" >&2
+    exit 1
+fi
+
+# ----------------------
+# Collect
+# ----------------------
+
+# Real events only: SYSCALL records of the week, without auditctl / auditd
+# themselves - every rule load (role run, restart, reboot) writes records with
+# every key, and that is no change. Nor is the ssh client adding a new host to
+# /root/.ssh/known_hosts (key ssh_keys) - it writes nothing else there, so
+# changes to authorized_keys and to the keys still count.
+# shellcheck disable=SC2086
+events=$(/usr/sbin/ausearch ${report_options} --raw 2>/dev/null | grep -E '(^| )type=SYSCALL ' | grep -vE 'exe="(/usr)?/sbin/audit(ctl|d)"' | grep -vE 'exe="/usr/bin/ssh" .*key="ssh_keys"')
+if ! key_summary=$(echo "${events}" | /usr/sbin/aureport -k --summary 2>/dev/null); then
+    echo "[ERROR] aureport -k --summary failed" >&2
+    exit 1
+fi
+
+alert_regex=${alert_keys// /|}
+alert_summary=$(echo "${key_summary}" | awk -v re="^(${alert_regex})$" '$1 ~ /^[0-9]+$/ && $2 ~ re {print}')
+
+lost_now=$(/sbin/auditctl -s | awk '/^lost/{print $2}')
+lost_now=${lost_now:-0}
+lost_prev=$(cat "${lost_state}" 2>/dev/null || echo "${lost_now}")
+lost_new=$(( lost_now - lost_prev ))
+if [ "${lost_new}" -lt 0 ]; then lost_new=${lost_now}; fi    # counter reset by a reboot
+echo "${lost_now}" > "${lost_state}"
+
+# Self-test: does a record reach the log file? auditd stays "active" when it
+# suspends logging (full disk: admin_space_left_action / disk_full_action) and
+# does not resume by itself. auditctl -m sends one USER record with a unique
+# text through the kernel and auditd.
+selftest_tag="audit-report-selftest-$$-$(date +%s)"
+/sbin/auditctl -m "${selftest_tag}" > /dev/null 2>&1
+logging_ok=0
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+    if tail -q -n 5000 "${log_file}.1" "${log_file}" 2>/dev/null | grep -q "${selftest_tag}"; then logging_ok=1; break; fi
+    sleep 1
+done
+if [ ${logging_ok} -eq 0 ]; then
+    email_subject="[auditd] NOT LOGGING - $(hostname -f)"
+    log_last_write=$(date -r "${log_file}" +"%Y-%m-%d %T" 2>/dev/null || echo 'no log file')
+fi
+
+if [ -z "${alert_summary}" ] && [ "${lost_new}" -eq 0 ] && [ ${logging_ok} -eq 1 ]; then
+    echo "[auditd] Nothing notable in the last week - no mail"
+    exit 0
+fi
+
+# ----------------------
+# Report
+# ----------------------
+
+{
+    echo "Weekly Report of the Audit Daemon"
+    echo "================================="
+    echo "Host: $(hostname -f)"
+    echo "Date: ${date_time}"
+    echo ""
+    if [ ${logging_ok} -eq 0 ]; then
+        echo "!! auditd is NOT writing ${log_file} - last write: ${log_last_write}"
+        echo "   service: $(systemctl is-active auditd 2>&1), free space: $(df -h --output=avail,pcent "$(dirname "${log_file}")" 2>/dev/null | tail -n 1 | xargs)"
+        echo "   Fix the cause (usually a full disk), then: systemctl restart auditd"
+        echo ""
+    fi
+    if [ "${lost_new}" -ne 0 ]; then
+        echo "!! ${lost_new} audit events LOST since the last report (auditctl -s)"
+        echo ""
+    fi
+    if [ -n "${alert_summary}" ]; then
+        echo "Security-relevant changes (events per key)"
+        echo "------------------------------------------"
+        echo "${alert_summary}"
+        echo ""
+        echo "Details (newest 200)"
+        echo "--------------------"
+        echo "${events}" | /usr/sbin/aureport -k -i 2>/dev/null | awk -v re="^(${alert_regex})$" '$4 ~ re' | tail -n 200
+        echo ""
+        echo "Full records: ausearch --input-logs -k <key> -i --start week-ago"
+        echo ""
+    fi
+    echo "All keys (events per key)"
+    echo "-------------------------"
+    echo "${key_summary}" | awk '$1 ~ /^[0-9]+$/'
+    echo ""
+    echo "Failed events (for information)"
+    echo "-------------------------------"
+    # shellcheck disable=SC2086
+    /usr/sbin/aureport ${report_options} --failed | grep "^Number of"
+} > "${report}"
+
+# ----------------------
+# Send
+# ----------------------
+echo "[auditd] Send the report to '${email_address}'"
+if ! mail -s "${email_subject}" "${email_address}" < "${report}"; then
+    echo "[ERROR] Sending the report to '${email_address}' failed" >&2
+    exit 1
+fi
+
+exit 0

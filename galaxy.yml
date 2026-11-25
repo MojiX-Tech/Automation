@@ -1,0 +1,21 @@
+---
+namespace: mojix_tech
+name: automation
+version: 1.0.0
+readme: README.md
+authors:
+  - MojiX-Tech
+description: Ansible roles for running Linux servers - small, readable, safe defaults
+license:
+  - Apache-2.0
+tags:
+  - linux
+  - security
+  - infrastructure
+  - monitoring
+repository: https://github.com/MojiX-Tech/Automation
+issues: https://github.com/MojiX-Tech/Automation/issues
+build_ignore:
+  - .git
+  - .gitignore
+  - "*.tar.gz"

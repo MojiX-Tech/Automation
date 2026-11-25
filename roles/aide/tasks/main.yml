@@ -1,0 +1,83 @@
+---
+- name: Install AIDE
+  ansible.builtin.apt:
+    name: "{{ aide_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  tags: [aide_install]
+
+- name: AIDE configuration (lean baseline)
+  ansible.builtin.template:
+    src: aide-lean.conf.j2
+    dest: "{{ aide_config }}"
+    owner: root
+    group: root
+    mode: "0640"
+    validate: /usr/bin/aide --config-check --config %s
+  register: aide_config_result
+  tags: [aide_config]
+
+- name: Distribution's daily AIDE check off (cron.daily)
+  ansible.builtin.lineinfile:
+    path: /etc/default/aide
+    regexp: '^#?\s*CRON_DAILY_RUN='
+    line: 'CRON_DAILY_RUN=no    # aide role: one weekly run by /usr/local/bin/aide-report'
+  when: aide_disable_distribution_check | bool
+  failed_when: false
+  tags: [aide_config]
+
+- name: Check for the distribution's daily AIDE timer
+  ansible.builtin.stat:
+    path: /lib/systemd/system/dailyaidecheck.timer
+  register: aide_daily_timer_stat
+  tags: [aide_config]
+
+- name: Distribution's daily AIDE check off (systemd timer)
+  ansible.builtin.systemd:
+    name: dailyaidecheck.timer
+    state: stopped
+    enabled: false
+    masked: true
+  when:
+    - aide_disable_distribution_check | bool
+    - aide_daily_timer_stat.stat.exists
+  tags: [aide_config]
+
+- name: Weekly report script
+  ansible.builtin.template:
+    src: aide-report.sh.j2
+    dest: /usr/local/bin/aide-report
+    owner: root
+    group: root
+    mode: "0750"
+  tags: [aide_report]
+
+- name: Weekly report by mail
+  ansible.builtin.cron:
+    name: Weekly AIDE report - file changes that no package update explains by mail
+    weekday: "{{ aide_report_weekday }}"
+    hour: "{{ aide_report_hour }}"
+    minute: "{{ aide_report_minute }}"
+    job: /usr/local/bin/aide-report > /dev/null
+    state: "{{ 'present' if aide_report_enabled | bool else 'absent' }}"
+  tags: [aide_report]
+
+# Baseline: the first one, and a new one whenever the configuration changed -
+# the next run would otherwise report every entry that left or joined the
+# watched set. (Later baselines are written by the weekly run.)
+# LAST task: everything the role itself changes (crontab, /etc/default/aide,
+# the report script) must be part of the baseline.
+- name: Check for the baseline
+  ansible.builtin.stat:
+    path: "{{ aide_db }}"
+  register: aide_db_stat
+  tags: [aide_config, aide_report]
+
+- name: Baseline (the first one, or after a change of the configuration)
+  ansible.builtin.command: /usr/local/bin/aide-report --init
+  when: not aide_db_stat.stat.exists or (aide_config_result is changed)
+  changed_when: true
+  async: 3600
+  poll: 10
+  tags: [aide_config, aide_report]

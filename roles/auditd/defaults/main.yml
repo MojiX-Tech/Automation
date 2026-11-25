@@ -1,0 +1,111 @@
+---
+# Packages that are installed
+auditd_packages:
+  - auditd
+  - audispd-plugins
+
+# auditd.conf - local log retention: auditd_max_log_file (MB) x auditd_num_logs files.
+# 10 x 50 MB holds several weeks on a server with few logins.
+auditd_max_log_file: 50
+auditd_num_logs: 10
+auditd_action_mail_acct: root
+
+# Free space (MB) on the log partition: below auditd_space_left a line goes to
+# syslog, below auditd_admin_space_left auditd stops writing (it never stops
+# the host).
+auditd_space_left: 500
+auditd_admin_space_left: 200
+
+# Kernel side (rules.d/audit.rules)
+auditd_buffer_size: 8192
+auditd_fail_mode: 1       # 1 = printk on failure, never panic the host
+auditd_enable_flag: 1     # 2 locks the rules until the next reboot
+
+# journald copies every audit event into the journal
+# (systemd-journald-audit.socket) - a second copy of audit.log.
+# false = the socket is masked, the journal has no audit lines (search with
+# ausearch); auditd itself is not affected.
+auditd_journald_copy: false
+
+# Cron jobs get a login session from pam_loginuid (/etc/pam.d/cron), so every
+# command of every cron job would be logged as a command of a logged-in user.
+# false = cron jobs are not logged; changes to the crontabs still are (key cron).
+auditd_cron_loginuid: false
+
+# SSH clients (addresses) whose sessions get no login session, so their
+# commands are not logged as user_cmd. The login itself is still logged
+# (USER_LOGIN), and so are writes to the watched files. Only for trusted
+# machines that log in all day (monitoring, backup, configuration management).
+# A person who hops on from one of these hosts is only logged on the first one.
+auditd_ssh_unaudited_hosts: []
+
+# Login IDs whose commands are not logged as user_cmd, e.g. a service account
+# whose jobs open PAM sessions inside a container.
+auditd_unaudited_auids: []
+
+# Record types that are never written to audit.log.
+#   user   = records sent by userspace (PAM, sshd), e.g. CRED_REFR: the PAM
+#            credential refresh, several per SSH login
+#   kernel = records of the kernel, e.g. BPF on container hosts (one per
+#            container start). Older kernels do not know every type - a rule
+#            with an unknown type stops the rules from loading.
+auditd_exclude_user_msgtypes: []
+auditd_exclude_kernel_msgtypes: []
+
+# Linger for root: root's systemd user manager stays up instead of starting
+# and stopping with every root login (each start is logged as about a dozen
+# commands). Useful on hosts with many automatic root logins.
+auditd_root_linger: false
+
+# Weekly report /usr/local/bin/audit-report.
+# ONE mail, and only when a key below fired, audit events were lost or auditd
+# does not write its log. The host must be able to send mail with "mail".
+auditd_report_enabled: true
+auditd_report_email: root
+auditd_report_alert_keys:
+  - identity
+  - sudoers
+  - sshd
+  - ssh_keys
+  - pam
+  - login
+  - auditconfig
+  - modules
+  - firewall
+auditd_report_weekday: "0"
+auditd_report_hour: "10"
+auditd_report_minute: "30"
+
+# Baseline write watches (-p wa). A path that does not exist on a host is
+# skipped (a watch on a missing path can stop the rules from loading).
+auditd_watches:
+  - { path: /etc/audit/, key: auditconfig }
+  - { path: /etc/libaudit.conf, key: auditconfig }
+  - { path: /var/log/audit/, key: auditlog }
+  - { path: /etc/passwd, key: identity }
+  - { path: /etc/shadow, key: identity }
+  - { path: /etc/group, key: identity }
+  - { path: /etc/gshadow, key: identity }
+  - { path: /etc/security/opasswd, key: identity }
+  - { path: /etc/sudoers, key: sudoers }
+  - { path: /etc/sudoers.d/, key: sudoers }
+  - { path: /etc/ssh/sshd_config, key: sshd }
+  - { path: /etc/ssh/sshd_config.d/, key: sshd }
+  - { path: /root/.ssh/, key: ssh_keys }
+  - { path: /etc/pam.d/, key: pam }
+  - { path: /etc/login.defs, key: login }
+  - { path: /etc/crontab, key: cron }
+  - { path: /etc/cron.d/, key: cron }
+  - { path: /var/spool/cron/, key: cron }
+  - { path: /etc/systemd/system/, key: systemd }
+  - { path: /etc/hosts, key: network }
+  - { path: /etc/hostname, key: network }
+  - { path: /etc/nftables.conf, key: firewall }
+  - { path: /etc/nftables/, key: firewall }
+  - { path: /etc/modprobe.d/, key: modules }
+  - { path: /etc/localtime, key: time }
+
+# More paths to watch for writes, per host or group, e.g.
+#   auditd_extra_watches:
+#     - { path: /etc/myapp/secrets.env, key: secrets }
+auditd_extra_watches: []
