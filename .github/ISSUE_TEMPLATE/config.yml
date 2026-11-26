@@ -1,0 +1,6 @@
+---
+blank_issues_enabled: true
+contact_links:
+  - name: Security problem
+    url: https://github.com/MojiX-Tech/Automation/security/advisories/new
+    about: Please report a vulnerability privately, not as an issue.

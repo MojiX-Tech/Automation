@@ -8,9 +8,11 @@ on:
 jobs:
   galaxy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Install ansible-core
@@ -28,6 +30,12 @@ jobs:
         env:
           GALAXY_API_KEY: ${{ secrets.GALAXY_API_KEY }}
         run: ansible-galaxy collection publish mojix_tech-automation-*.tar.gz --token "${GALAXY_API_KEY}"
+      - name: Release on GitHub with the notes of the changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tools/release-notes.sh "${GITHUB_REF_NAME#v}" > notes.md
+          gh release create "${GITHUB_REF_NAME}" mojix_tech-automation-*.tar.gz --title "${GITHUB_REF_NAME#v}" --notes-file notes.md
 
   # one entry per directory under roles/
   list:
@@ -35,7 +43,7 @@ jobs:
     outputs:
       roles: ${{ steps.roles.outputs.roles }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: roles
         run: echo "roles=$(ls roles | jq -R . | jq -cs .)" >> "${GITHUB_OUTPUT}"
 
@@ -48,8 +56,8 @@ jobs:
       matrix:
         role: ${{ fromJSON(needs.list.outputs.roles) }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Install ansible-core

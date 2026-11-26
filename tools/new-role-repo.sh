@@ -21,6 +21,8 @@ else
     gh repo create "${repo}" --public --description "Ansible role ${role}: ${description}" > /dev/null
     echo "Created ${repo}"
 fi
+gh repo edit "${repo}" --homepage "https://galaxy.ansible.com/ui/standalone/roles/${owner}/${role}/" \
+    --add-topic ansible --add-topic ansible-role --add-topic debian --add-topic ubuntu --add-topic "${role}" > /dev/null
 
 work="$(mktemp -d)"
 trap 'rm -rf "${work}"' EXIT

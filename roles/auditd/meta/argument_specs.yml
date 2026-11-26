@@ -1,0 +1,112 @@
+---
+argument_specs:
+  main:
+    short_description: Lean auditd baseline with one weekly mail
+    description:
+      - Records every command of a logged-in person and every write to a security-relevant file.
+      - Sends one mail a week, and only when something is notable.
+    options:
+      auditd_packages:
+        type: list
+        elements: str
+        description: Packages that are installed.
+      auditd_max_log_file:
+        type: int
+        description: Size of one log file in MB.
+      auditd_num_logs:
+        type: int
+        description: Number of log files that are kept.
+      auditd_action_mail_acct:
+        type: str
+        description: Account that auditd itself warns by mail.
+      auditd_space_left:
+        type: int
+        description: Free space in MB below which a line goes to syslog.
+      auditd_admin_space_left:
+        type: int
+        description: Free space in MB below which auditd stops writing.
+      auditd_buffer_size:
+        type: int
+        description: Kernel backlog buffer.
+      auditd_fail_mode:
+        type: int
+        choices: [0, 1, 2]
+        description: What the kernel does on a failure - 0 silent, 1 printk, 2 panic.
+      auditd_enable_flag:
+        type: int
+        choices: [0, 1, 2]
+        description: 1 enables the rules, 2 locks them until the next reboot.
+      auditd_journald_copy:
+        type: bool
+        description: Keep a second copy of the audit events in the journal.
+      auditd_cron_loginuid:
+        type: bool
+        description: Record the commands of cron jobs as user commands.
+      auditd_ssh_unaudited_hosts:
+        type: list
+        elements: str
+        description: Addresses of trusted machines whose SSH sessions are not recorded command by command.
+      auditd_unaudited_auids:
+        type: list
+        elements: int
+        description: Login IDs that are no people.
+      auditd_exclude_user_msgtypes:
+        type: list
+        elements: str
+        description: Record types of userspace that are never written.
+      auditd_exclude_kernel_msgtypes:
+        type: list
+        elements: str
+        description: Record types of the kernel that are never written.
+      auditd_root_linger:
+        type: bool
+        description: Keep root's systemd user manager running.
+      auditd_report_enabled:
+        type: bool
+        description: Weekly report on or off.
+      auditd_report_packages:
+        type: list
+        elements: str
+        description: Packages the weekly report needs.
+      auditd_report_email:
+        type: str
+        description: Receiver of the weekly mail.
+      auditd_report_alert_keys:
+        type: list
+        elements: str
+        description: Keys that are a reason to send the mail.
+      auditd_report_weekday:
+        type: str
+        description: Day of the week of the report (crontab form).
+      auditd_report_hour:
+        type: str
+        description: Hour of the report (crontab form).
+      auditd_report_minute:
+        type: str
+        description: Minute of the report (crontab form).
+      auditd_watches:
+        type: list
+        elements: dict
+        description: Paths that are watched for writes.
+        options:
+          path:
+            type: str
+            required: true
+            description: File or directory.
+          key:
+            type: str
+            required: true
+            description: Key the events are filed under.
+      auditd_extra_watches:
+        type: list
+        elements: dict
+        description: More paths to watch for writes.
+        options:
+          path:
+            type: str
+            required: true
+            description: File or directory.
+          key:
+            type: str
+            required: true
+            description: Key the events are filed under.

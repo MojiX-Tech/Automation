@@ -1,0 +1,59 @@
+---
+argument_specs:
+  main:
+    short_description: fail2ban that reads the journal and bans with nftables
+    description:
+      - Bans a host that keeps failing to log in, longer each time it comes back.
+    options:
+      fail2ban_packages:
+        type: list
+        elements: str
+        description: Packages that are installed.
+      fail2ban_backend:
+        type: str
+        description: Where the failures are read.
+      fail2ban_maxretry:
+        type: int
+        description: Failures until a ban.
+      fail2ban_findtime:
+        type: str
+        description: Time in which the failures are counted.
+      fail2ban_bantime:
+        type: str
+        description: Length of the first ban.
+      fail2ban_bantime_increment:
+        type: bool
+        description: Ban a returning host longer each time.
+      fail2ban_bantime_maxtime:
+        type: str
+        description: The longest ban.
+      fail2ban_ignoreip:
+        type: list
+        elements: str
+        description: Addresses and networks that are never banned.
+      fail2ban_banaction:
+        type: str
+        description: Action that bans the ports of a jail.
+      fail2ban_banaction_allports:
+        type: str
+        description: Action that bans all ports.
+      fail2ban_action:
+        type: str
+        description: What happens at a ban.
+      fail2ban_destemail:
+        type: str
+        description: Receiver, when the action sends a mail.
+      fail2ban_sender:
+        type: str
+        description: Sender, when the action sends a mail.
+      fail2ban_jails:
+        type: list
+        elements: dict
+        description: The jails - name, and any other option of the jail.
+      fail2ban_loglevel:
+        type: str
+        choices: [CRITICAL, ERROR, WARNING, NOTICE, INFO, DEBUG]
+        description: Log level of fail2ban.
+      fail2ban_dbpurgeage:
+        type: str
+        description: How long a ban is remembered.

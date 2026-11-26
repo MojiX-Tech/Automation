@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.0
+
+- Every role checks its variables before it starts (`meta/argument_specs.yml`): a wrong type or
+  an unknown choice stops the run before the host is touched.
+- The tests also prove that a wrong value is refused and that a dry run (`--check`) works.
+- Every version is a release on GitHub with its notes.
+- New: `SECURITY.md`, `CONTRIBUTING.md`, a form for bug reports.
+
 ## 1.4.0
 
 - New role `fail2ban`: reads the journal, bans with nftables, longer bans for hosts that come back.

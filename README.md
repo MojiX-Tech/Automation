@@ -1,5 +1,10 @@
 # Automation
 
+[![test](https://github.com/MojiX-Tech/Automation/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/MojiX-Tech/Automation/actions/workflows/test.yml)
+[![lint](https://github.com/MojiX-Tech/Automation/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/MojiX-Tech/Automation/actions/workflows/lint.yml)
+[![galaxy](https://img.shields.io/ansible/collection/v/mojix_tech/automation)](https://galaxy.ansible.com/ui/repo/published/mojix_tech/automation/)
+[![license](https://img.shields.io/github/license/MojiX-Tech/Automation)](LICENSE)
+
 Ansible roles for running Linux servers. Each role does one job, has safe defaults and a
 README that says what it changes on the host.
 
@@ -44,9 +49,13 @@ Each role's README lists its variables and says what it changes on the host.
 ## Tested
 
 Every push runs every role on every supported OS version, each in a fresh virtual machine:
-the role runs, runs a second time without changing anything, and a script on the machine
-checks that it does what its README says (for example: a changed security file ends up in
-the weekly mail, a package update does not).
+a wrong value is refused before anything is changed, the role runs, runs a second time
+without changing anything, a dry run (`--check`) works, and a script on the machine checks
+that the role does what its README says (for example: a changed security file ends up in the
+weekly mail, a package update does not).
+
+Every role checks its variables before it starts: a wrong type or an unknown choice stops the
+run with a clear message, before the host is touched.
 
 ## One role without the collection
 
@@ -72,7 +81,7 @@ written by the releases of this one - changes are made here.
 A fixed version:
 
 ```bash
-ansible-galaxy collection install mojix_tech.automation:1.4.0
+ansible-galaxy collection install mojix_tech.automation:1.5.0
 ```
 
 Straight from GitHub, without Ansible Galaxy:
@@ -113,6 +122,14 @@ tools/                  publishes each role as a stand-alone role at a release
 A new role goes into `roles/<name>/` with `defaults/`, `tasks/`, `meta/main.yml` and a README,
 gets its playbook `playbooks/<name>.yml` and a line in the table above. Run
 `tools/new-role-repo.sh <name>` once, so that the release can publish it by itself too.
+
+## Help and changes
+
+- What changed in which version: [CHANGELOG.md](CHANGELOG.md) and the
+  [releases](https://github.com/MojiX-Tech/Automation/releases)
+- A bug or a question: [open an issue](https://github.com/MojiX-Tech/Automation/issues)
+- Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
+- A security problem: [SECURITY.md](SECURITY.md)
 
 ## Licence
 

@@ -1,7 +1,7 @@
 ---
 namespace: mojix_tech
 name: automation
-version: 1.4.0
+version: 1.5.0
 readme: README.md
 authors:
   - MojiX-Tech
@@ -15,6 +15,8 @@ tags:
   - monitoring
 repository: https://github.com/MojiX-Tech/Automation
 issues: https://github.com/MojiX-Tech/Automation/issues
+homepage: https://github.com/MojiX-Tech/Automation
+documentation: https://github.com/MojiX-Tech/Automation#readme
 build_ignore:
   - .git
   - .github
