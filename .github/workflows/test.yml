@@ -1,7 +1,10 @@
 ---
 # Runs every role on every supported OS version, each in a fresh virtual machine.
 name: test
-on: [push, pull_request]
+on:
+  push:
+    branches: ["**"]
+  pull_request:
 jobs:
   role:
     name: ${{ matrix.role }} on ${{ matrix.os }}

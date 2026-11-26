@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.1
+
+- Every role is also published as a stand-alone role: `ansible-galaxy role install MojiX-Tech.<role>`.
+
 ## 1.3.0
 
 - Both roles support Debian 12 and 13 and Ubuntu 22.04, 24.04 and 26.04, and are tested on each

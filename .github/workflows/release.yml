@@ -1,5 +1,6 @@
 ---
-# A version tag (v1.2.3) publishes that version to Ansible Galaxy.
+# A version tag (v1.2.3) publishes that version to Ansible Galaxy:
+# the collection, and every role that changed as a stand-alone role.
 name: release
 on:
   push:
@@ -27,3 +28,42 @@ jobs:
         env:
           GALAXY_API_KEY: ${{ secrets.GALAXY_API_KEY }}
         run: ansible-galaxy collection publish mojix_tech-automation-*.tar.gz --token "${GALAXY_API_KEY}"
+
+  # one entry per directory under roles/
+  list:
+    runs-on: ubuntu-latest
+    outputs:
+      roles: ${{ steps.roles.outputs.roles }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: roles
+        run: echo "roles=$(ls roles | jq -R . | jq -cs .)" >> "${GITHUB_OUTPUT}"
+
+  role:
+    name: stand-alone role ${{ matrix.role }}
+    needs: [galaxy, list]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        role: ${{ fromJSON(needs.list.outputs.roles) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ansible-core
+        run: pip install ansible-core
+      - name: Write the role into its own repository and let Galaxy import it
+        env:
+          DEPLOY_KEY: ${{ secrets[format('DEPLOY_KEY_{0}', matrix.role)] }}
+          GALAXY_API_KEY: ${{ secrets.GALAXY_API_KEY }}
+        run: |
+          if [ -z "${DEPLOY_KEY}" ]; then
+            echo "No secret DEPLOY_KEY_${{ matrix.role }} - run tools/new-role-repo.sh ${{ matrix.role }} once"
+            exit 1
+          fi
+          install -m 600 /dev/null "${RUNNER_TEMP}/key"
+          printf '%s\n' "${DEPLOY_KEY}" > "${RUNNER_TEMP}/key"
+          export GIT_SSH_COMMAND="ssh -i ${RUNNER_TEMP}/key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          tools/publish-role.sh "${{ matrix.role }}" "${GITHUB_REF_NAME#v}"

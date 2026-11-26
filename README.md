@@ -47,12 +47,31 @@ the role runs, runs a second time without changing anything, and a script on the
 checks that it does what its README says (for example: a changed security file ends up in
 the weekly mail, a package update does not).
 
+## One role without the collection
+
+Every role is also published by itself, as a stand-alone role:
+
+```bash
+ansible-galaxy role install MojiX-Tech.aide
+```
+
+```yaml
+- hosts: all
+  become: true
+  roles:
+    - role: MojiX-Tech.aide
+```
+
+It is the same role with a shorter name: `MojiX-Tech.<role>` instead of
+`mojix_tech.automation.<role>`. Each has its own repository, `ansible-role-<role>`, which is
+written by the releases of this one - changes are made here.
+
 ## Other ways to get it
 
 A fixed version:
 
 ```bash
-ansible-galaxy collection install mojix_tech.automation:1.3.0
+ansible-galaxy collection install mojix_tech.automation:1.3.1
 ```
 
 Straight from GitHub, without Ansible Galaxy:
@@ -86,11 +105,13 @@ playbooks/<role>.yml    one playbook per role, named like the role
 ansible.cfg             lets the playbooks find the roles in a checkout
 galaxy.yml              collection name and version
 tests/                  boots a virtual machine per OS version and checks each role on it
+tools/                  publishes each role as a stand-alone role at a release
 .github/workflows/      checks on every push; a version tag publishes to Ansible Galaxy
 ```
 
 A new role goes into `roles/<name>/` with `defaults/`, `tasks/`, `meta/main.yml` and a README,
-gets its playbook `playbooks/<name>.yml` and a line in the table above.
+gets its playbook `playbooks/<name>.yml` and a line in the table above. Run
+`tools/new-role-repo.sh <name>` once, so that the release can publish it by itself too.
 
 ## Licence
 
