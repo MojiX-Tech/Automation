@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1
+
+- README: install from Ansible Galaxy.
+
 ## 1.2.0
 
 - The playbooks of the roles moved to `playbooks/` (`playbooks/auditd.yml`, `playbooks/aide.yml`).

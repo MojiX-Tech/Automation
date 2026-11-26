@@ -28,11 +28,18 @@ roles are.
 
 ### As a collection
 
-The repository is also an Ansible collection, `mojix_tech.automation`:
+The repository is also an Ansible collection, `mojix_tech.automation`, published on
+[Ansible Galaxy](https://galaxy.ansible.com/ui/repo/published/mojix_tech/automation/):
+
+```bash
+ansible-galaxy collection install mojix_tech.automation
+ansible-galaxy collection install mojix_tech.automation:1.2.1     # a fixed version
+```
+
+Straight from GitHub, without Ansible Galaxy:
 
 ```bash
 ansible-galaxy collection install git+https://github.com/MojiX-Tech/Automation.git
-ansible-galaxy collection install git+https://github.com/MojiX-Tech/Automation.git,v1.2.0   # a fixed version
 ```
 
 Then the playbooks run by name, from any folder:

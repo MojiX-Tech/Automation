@@ -25,7 +25,7 @@ distribution's files stay untouched, its nightly run is switched off.
 ## Install
 
 ```bash
-ansible-galaxy collection install git+https://github.com/MojiX-Tech/Automation.git
+ansible-galaxy collection install mojix_tech.automation
 ```
 
 ## Example playbook
