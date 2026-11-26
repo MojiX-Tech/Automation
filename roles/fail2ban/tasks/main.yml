@@ -1,0 +1,50 @@
+---
+- name: Debian or Ubuntu only
+  ansible.builtin.assert:
+    that: ansible_facts['os_family'] == 'Debian'
+    fail_msg: "The role fail2ban supports Debian and Ubuntu, not {{ ansible_facts['distribution'] }}."
+    quiet: true
+  tags: [always]
+
+- name: Install fail2ban
+  ansible.builtin.apt:
+    name: "{{ fail2ban_packages }}"
+    state: present
+    install_recommends: false
+    update_cache: true
+    cache_valid_time: 3600
+  tags: [fail2ban_install]
+
+- name: Settings of fail2ban itself
+  ansible.builtin.template:
+    src: fail2ban.local.j2
+    dest: /etc/fail2ban/fail2ban.local
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart fail2ban
+  tags: [fail2ban_config]
+
+- name: Jails
+  ansible.builtin.template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart fail2ban
+  tags: [fail2ban_config]
+
+# Right after the installation fail2ban may have failed to start: the
+# distribution's own settings look for a log file that a current system no
+# longer writes. With the files above it starts.
+- name: Apply the settings now
+  ansible.builtin.meta: flush_handlers
+  tags: [fail2ban_config]
+
+- name: Enable and start fail2ban
+  ansible.builtin.service:
+    name: fail2ban
+    enabled: true
+    state: started
+  tags: [fail2ban_install]

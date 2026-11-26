@@ -1,0 +1,35 @@
+# Managed by Ansible (role fail2ban) - local changes are overwritten
+#
+# This file comes after /etc/fail2ban/jail.conf and /etc/fail2ban/jail.d/*.conf
+# and wins over both.
+
+[DEFAULT]
+backend = {{ fail2ban_backend }}
+maxretry = {{ fail2ban_maxretry }}
+findtime = {{ fail2ban_findtime }}
+bantime = {{ fail2ban_bantime }}
+bantime.increment = {{ 'true' if fail2ban_bantime_increment | bool else 'false' }}
+bantime.maxtime = {{ fail2ban_bantime_maxtime }}
+ignoreself = true
+ignoreip = 127.0.0.1/8 ::1{% for address in fail2ban_ignoreip %} {{ address }}{% endfor %}
+
+banaction = {{ fail2ban_banaction }}
+banaction_allports = {{ fail2ban_banaction_allports }}
+destemail = {{ fail2ban_destemail }}
+sender = {{ fail2ban_sender }}
+action = {{ fail2ban_action }}
+{% set names = fail2ban_jails | map(attribute='name') | list %}
+{% if 'sshd' not in names %}
+
+# The distribution switches this jail on by itself; it is not in fail2ban_jails.
+[sshd]
+enabled = false
+{% endif %}
+{% for jail in fail2ban_jails %}
+
+[{{ jail.name }}]
+enabled = true
+{% for key, value in jail.items() | sort if key != 'name' %}
+{{ key }} = {{ value }}
+{% endfor %}
+{% endfor %}

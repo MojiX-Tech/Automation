@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.0
+
+- New role `fail2ban`: reads the journal, bans with nftables, longer bans for hosts that come back.
+
 ## 1.3.1
 
 - Every role is also published as a stand-alone role: `ansible-galaxy role install MojiX-Tech.<role>`.

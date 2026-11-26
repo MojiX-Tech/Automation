@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        role: [auditd, aide]
+        role: [auditd, aide, fail2ban]
         os: [debian-12, debian-13, ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]
     env:
       SSH: ssh -i tests/vm/key -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR root@127.0.0.1
@@ -40,5 +40,5 @@ jobs:
       - name: Show the state of the machine after a failure
         if: failure()
         run: |
-          $SSH 'systemctl --failed --no-pager; systemctl status auditd --no-pager -l; journalctl --no-pager -n 80' || true
+          $SSH 'systemctl --failed --no-pager; systemctl status ${{ matrix.role }} --no-pager -l; journalctl --no-pager -n 80' || true
           sudo tail -n 30 tests/vm/serial.log || true

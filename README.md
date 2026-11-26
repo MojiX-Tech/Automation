@@ -18,6 +18,7 @@ name a role in a playbook.
 |---|---|---|
 | [`auditd`](https://github.com/MojiX-Tech/Automation/blob/main/roles/auditd/README.md) | Lean audit baseline: who did what, which security files changed. One weekly mail, only when something is notable. | `mojix_tech.automation.auditd` |
 | [`aide`](https://github.com/MojiX-Tech/Automation/blob/main/roles/aide/README.md) | Lean file integrity check: one weekly mail, only for changes that no package update explains. | `mojix_tech.automation.aide` |
+| [`fail2ban`](https://github.com/MojiX-Tech/Automation/blob/main/roles/fail2ban/README.md) | Bans hosts that keep failing to log in: reads the journal, bans with nftables, longer bans for hosts that come back. | `mojix_tech.automation.fail2ban` |
 
 The roles do not depend on each other. Take one, several or all:
 
@@ -71,7 +72,7 @@ written by the releases of this one - changes are made here.
 A fixed version:
 
 ```bash
-ansible-galaxy collection install mojix_tech.automation:1.3.1
+ansible-galaxy collection install mojix_tech.automation:1.4.0
 ```
 
 Straight from GitHub, without Ansible Galaxy:

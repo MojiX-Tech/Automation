@@ -1,0 +1,7 @@
+---
+# ansible-playbook -i "server1.example.com," playbooks/fail2ban.yml
+- name: (role = fail2ban) ban hosts that keep failing to log in
+  hosts: all
+  become: true
+  roles:
+    - fail2ban

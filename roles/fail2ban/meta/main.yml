@@ -1,0 +1,23 @@
+---
+galaxy_info:
+  author: MojiX-Tech
+  description: fail2ban that works out of the box - reads the journal, bans with nftables, longer bans for hosts that come back
+  license: Apache-2.0
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+        - trixie
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+        - resolute
+  galaxy_tags:
+    - fail2ban
+    - security
+    - ssh
+    - firewall
+    - bruteforce
+dependencies: []

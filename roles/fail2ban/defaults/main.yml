@@ -1,0 +1,56 @@
+---
+# Packages that are installed.
+#   python3-systemd  fail2ban reads the journal with it (fail2ban_backend: systemd)
+#   nftables         the "nft" command for the ban action; its own service is NOT enabled
+fail2ban_packages:
+  - fail2ban
+  - python3-systemd
+  - nftables
+
+# Where fail2ban finds the failed logins. systemd = the journal. That works on
+# every supported system; a current Debian has no /var/log/auth.log any more.
+fail2ban_backend: systemd
+
+# A host is banned after fail2ban_maxretry failures within fail2ban_findtime,
+# for fail2ban_bantime. Times: seconds, or with a unit (10m, 1h, 1d, 1w).
+fail2ban_maxretry: 5
+fail2ban_findtime: 10m
+fail2ban_bantime: 1h
+
+# A host that comes back is banned longer each time, up to fail2ban_bantime_maxtime.
+fail2ban_bantime_increment: true
+fail2ban_bantime_maxtime: 1w
+
+# Addresses and networks that are never banned, e.g. your office or your
+# monitoring server. The host itself (127.0.0.1/8, ::1 and its own addresses)
+# is always left out.
+fail2ban_ignoreip: []
+
+# How a host is banned: a rule in fail2ban's own nftables table. The firewall
+# rules of the host are not read and not changed.
+fail2ban_banaction: nftables-multiport
+fail2ban_banaction_allports: nftables-allports
+
+# What happens at a ban. %(action_)s = ban only.
+# %(action_mw)s = ban and send a mail with a whois report to fail2ban_destemail
+# (the host must be able to send mail).
+fail2ban_action: "%(action_)s"
+fail2ban_destemail: root
+fail2ban_sender: "fail2ban@{{ ansible_facts['fqdn'] | default(inventory_hostname) }}"
+
+# The jails. "name" is the name of a jail that fail2ban ships (see
+# /etc/fail2ban/jail.conf); every other key is written into the jail as it is,
+# for example:
+#   fail2ban_jails:
+#     - name: sshd
+#       port: 2222
+#       maxretry: 3
+#     - name: nginx-http-auth
+fail2ban_jails:
+  - name: sshd
+
+# fail2ban itself
+fail2ban_loglevel: INFO
+# How long a ban is remembered. Must be longer than fail2ban_bantime_maxtime,
+# or a returning host starts at the first step again.
+fail2ban_dbpurgeage: 8d
