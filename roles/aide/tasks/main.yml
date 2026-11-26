@@ -1,8 +1,16 @@
 ---
+- name: Debian or Ubuntu only
+  ansible.builtin.assert:
+    that: ansible_facts['os_family'] == 'Debian'
+    fail_msg: "The role aide supports Debian and Ubuntu, not {{ ansible_facts['distribution'] }}."
+    quiet: true
+  tags: [always]
+
 - name: Install AIDE
   ansible.builtin.apt:
     name: "{{ aide_packages }}"
     state: present
+    install_recommends: false
     update_cache: true
     cache_valid_time: 3600
   tags: [aide_install]
@@ -18,18 +26,30 @@
   register: aide_config_result
   tags: [aide_config]
 
+- name: Check for /etc/default/aide
+  ansible.builtin.stat:
+    path: /etc/default/aide
+    get_checksum: false
+  register: aide_default_stat
+  tags: [aide_config]
+
 - name: Distribution's daily AIDE check off (cron.daily)
   ansible.builtin.lineinfile:
     path: /etc/default/aide
     regexp: '^#?\s*CRON_DAILY_RUN='
     line: 'CRON_DAILY_RUN=no    # aide role: one weekly run by /usr/local/bin/aide-report'
-  when: aide_disable_distribution_check | bool
-  failed_when: false
+  when:
+    - aide_disable_distribution_check | bool
+    - aide_default_stat.stat.exists
   tags: [aide_config]
 
 - name: Check for the distribution's daily AIDE timer
   ansible.builtin.stat:
-    path: /lib/systemd/system/dailyaidecheck.timer
+    path: "{{ item }}"
+    get_checksum: false
+  loop:
+    - /usr/lib/systemd/system/dailyaidecheck.timer
+    - /lib/systemd/system/dailyaidecheck.timer
   register: aide_daily_timer_stat
   tags: [aide_config]
 
@@ -41,8 +61,17 @@
     masked: true
   when:
     - aide_disable_distribution_check | bool
-    - aide_daily_timer_stat.stat.exists
+    - aide_daily_timer_stat.results | selectattr('stat.exists') | list | length > 0
   tags: [aide_config]
+
+# The weekly run starts from root's crontab; a minimal system has no cron.
+- name: Install cron
+  ansible.builtin.apt:
+    name: "{{ aide_report_packages }}"
+    state: present
+    install_recommends: false
+  when: aide_report_enabled | bool
+  tags: [aide_install, aide_report]
 
 - name: Weekly report script
   ansible.builtin.template:

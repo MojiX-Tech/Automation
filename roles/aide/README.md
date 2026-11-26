@@ -17,7 +17,8 @@ distribution's files stay untouched, its nightly run is switched off.
 
 ## Requirements
 
-- Debian 11 or 12 (the role uses `apt` and reads the `dpkg` log; AIDE 0.17 or newer)
+- Debian 12 or 13, Ubuntu 22.04, 24.04 or 26.04 - every release of this role is tested on each
+  of them in a fresh virtual machine (the role uses `apt` and reads the `dpkg` log)
 - root on the target (`become: true`)
 - for the weekly mail: the host can send mail with the `mail` command. The role installs no
   mail software.

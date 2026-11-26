@@ -1,0 +1,41 @@
+---
+# Runs every role on every supported OS version, each in a fresh virtual machine.
+name: test
+on: [push, pull_request]
+jobs:
+  role:
+    name: ${{ matrix.role }} on ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        role: [auditd, aide]
+        os: [debian-12, debian-13, ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]
+    env:
+      SSH: ssh -i tests/vm/key -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR root@127.0.0.1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Ansible and the virtual machine tools
+        run: |
+          pip install ansible-core
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq qemu-system-x86 qemu-utils cloud-image-utils > /dev/null
+      - name: Start the test machine
+        run: tests/start-vm.sh ${{ matrix.os }}
+      - name: Run the role
+        run: ansible-playbook -i tests/inventory.ini playbooks/${{ matrix.role }}.yml
+      - name: A second run changes nothing
+        run: |
+          ansible-playbook -i tests/inventory.ini playbooks/${{ matrix.role }}.yml | tee /tmp/second.txt
+          grep -q 'changed=0 ' /tmp/second.txt
+      - name: Check the result on the machine
+        run: $SSH 'bash -s' < tests/verify-${{ matrix.role }}.sh
+      - name: Show the state of the machine after a failure
+        if: failure()
+        run: |
+          $SSH 'systemctl --failed --no-pager; systemctl status auditd --no-pager -l; journalctl --no-pager -n 80' || true
+          sudo tail -n 30 tests/vm/serial.log || true

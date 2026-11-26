@@ -14,10 +14,12 @@ changed, audit events were lost, or auditd stopped writing its log.
 
 ## Requirements
 
-- Debian 11 or 12 (the role uses `apt`; other Debian-based systems may work but are not tested)
+- Debian 12 or 13, Ubuntu 22.04, 24.04 or 26.04 - every release of this role is tested on each
+  of them in a fresh virtual machine
 - root on the target (`become: true`)
 - for the weekly mail: the host can send mail with the `mail` command. The role installs no
   mail software. Without it, set `auditd_report_enabled: false`.
+- not inside a container: the kernel lets only the host run auditd
 
 ## Install
 

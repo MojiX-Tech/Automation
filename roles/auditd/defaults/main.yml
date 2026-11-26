@@ -61,6 +61,8 @@ auditd_root_linger: false
 # ONE mail, and only when a key below fired, audit events were lost or auditd
 # does not write its log. The host must be able to send mail with "mail".
 auditd_report_enabled: true
+auditd_report_packages:
+  - cron
 auditd_report_email: root
 auditd_report_alert_keys:
   - identity

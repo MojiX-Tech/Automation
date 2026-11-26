@@ -45,6 +45,8 @@ aide_excludes:
   - /etc/ld\.so\.cache$     # ldconfig, every library update
   - /etc/udev/hwdb\.bin$
   - /etc/lvm/(archive|backup|cache)
+  - /etc/systemd/system/snap[-.]     # Ubuntu: units of snaps, rewritten at every snap refresh
+  - /etc/systemd/system/[^/]+\.wants/snap[-.]
   - /etc/letsencrypt/(archive|live|csr|keys|renewal)     # every renewal
   - /root/\.ssh/known_hosts(\.old)?$     # written by every ssh to a new host
   - /boot/initrd\.img-     # update-initramfs
@@ -69,6 +71,8 @@ aide_disable_distribution_check: true
 # week (or when AIDE failed). The new state then becomes the baseline.
 # The host must be able to send mail with "mail".
 aide_report_enabled: true
+aide_report_packages:
+  - cron
 aide_report_email: root
 aide_report_weekday: "0"
 aide_report_hour: "11"

@@ -1,11 +1,29 @@
 ---
+- name: Debian or Ubuntu only
+  ansible.builtin.assert:
+    that: ansible_facts['os_family'] == 'Debian'
+    fail_msg: "The role auditd supports Debian and Ubuntu, not {{ ansible_facts['distribution'] }}."
+    quiet: true
+  tags: [always]
+
 - name: Install auditd
   ansible.builtin.apt:
     name: "{{ auditd_packages }}"
     state: present
+    install_recommends: false
     update_cache: true
     cache_valid_time: 3600
   tags: [auditd_install]
+
+# The weekly report runs from root's crontab; a minimal system has no cron.
+# Before the watch paths are checked: cron brings some of them.
+- name: Install cron
+  ansible.builtin.apt:
+    name: "{{ auditd_report_packages }}"
+    state: present
+    install_recommends: false
+  when: auditd_report_enabled | bool
+  tags: [auditd_install, auditd_report]
 
 - name: Configure auditd (log retention, behaviour on a full disk)
   ansible.builtin.template:
@@ -53,12 +71,24 @@
   notify: Load audit rules
   tags: [auditd_rules]
 
+- name: Check the PAM files of cron and sshd
+  ansible.builtin.stat:
+    path: "{{ item }}"
+    get_checksum: false
+  loop:
+    - /etc/pam.d/cron
+    - /etc/pam.d/sshd
+  register: auditd_pam_stat
+  tags: [auditd_rules]
+
 - name: Cron jobs without a login session (not logged as user commands)
   ansible.builtin.replace:
     path: /etc/pam.d/cron
     regexp: '^(session\s+required\s+pam_loginuid\.so)\s*$'
     replace: '# \1    # off: auditd role, cron jobs are not user commands'
-  when: not (auditd_cron_loginuid | bool)
+  when:
+    - auditd_pam_stat.results[0].stat.exists
+    - not (auditd_cron_loginuid | bool)
   tags: [auditd_rules]
 
 - name: Cron jobs with a login session
@@ -66,7 +96,9 @@
     path: /etc/pam.d/cron
     regexp: '^#\s*(session\s+required\s+pam_loginuid\.so)\s+# off: auditd role.*$'
     replace: '\1'
-  when: auditd_cron_loginuid | bool
+  when:
+    - auditd_pam_stat.results[0].stat.exists
+    - auditd_cron_loginuid | bool
   tags: [auditd_rules]
 
 - name: SSH sessions of trusted machines without a login session
@@ -78,6 +110,7 @@
       {{ auditd_ssh_unaudited_hosts | join(':') }}    # auditd role: skip pam_loginuid
     insertbefore: '^session\s+required\s+pam_loginuid\.so'
     state: "{{ 'present' if auditd_ssh_unaudited_hosts else 'absent' }}"
+  when: auditd_pam_stat.results[1].stat.exists
   tags: [auditd_rules]
 
 # Without linger root's user manager starts and stops with every root login,
@@ -90,11 +123,22 @@
   tags: [auditd_rules]
 
 # journald reads the kernel audit events too - a second copy of audit.log.
+- name: Check for journald's audit socket
+  ansible.builtin.stat:
+    path: "{{ item }}"
+    get_checksum: false
+  loop:
+    - /usr/lib/systemd/system/systemd-journald-audit.socket
+    - /lib/systemd/system/systemd-journald-audit.socket
+  register: auditd_journald_socket_stat
+  tags: [auditd_config]
+
 - name: Journal with or without a copy of the audit events
   ansible.builtin.systemd:
     name: systemd-journald-audit.socket
     state: "{{ 'started' if auditd_journald_copy | bool else 'stopped' }}"
     masked: "{{ not (auditd_journald_copy | bool) }}"
+  when: auditd_journald_socket_stat.results | selectattr('stat.exists') | list | length > 0
   notify: Restart journald
   tags: [auditd_config]
 

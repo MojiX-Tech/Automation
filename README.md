@@ -40,12 +40,19 @@ Set a role's variables in the playbook, in your inventory or with `-e`, for exam
 `-e aide_report_email=admin@example.com`. Try it first with `--check --diff`.
 Each role's README lists its variables and says what it changes on the host.
 
+## Tested
+
+Every push runs every role on every supported OS version, each in a fresh virtual machine:
+the role runs, runs a second time without changing anything, and a script on the machine
+checks that it does what its README says (for example: a changed security file ends up in
+the weekly mail, a package update does not).
+
 ## Other ways to get it
 
 A fixed version:
 
 ```bash
-ansible-galaxy collection install mojix_tech.automation:1.2.3
+ansible-galaxy collection install mojix_tech.automation:1.3.0
 ```
 
 Straight from GitHub, without Ansible Galaxy:
@@ -68,7 +75,8 @@ the roles are.
 ## Requirements
 
 - ansible-core 2.15 or newer on the control machine
-- the targets each role names in its README (today: Debian 11 and 12)
+- targets: Debian 12 and 13, Ubuntu 22.04, 24.04 and 26.04 (the newest release and the two
+  before it; Debian 11 has reached its end of life and is no longer tested)
 
 ## Layout
 
@@ -77,6 +85,7 @@ roles/<role>/           one directory per role, each with its own README
 playbooks/<role>.yml    one playbook per role, named like the role
 ansible.cfg             lets the playbooks find the roles in a checkout
 galaxy.yml              collection name and version
+tests/                  boots a virtual machine per OS version and checks each role on it
 .github/workflows/      checks on every push; a version tag publishes to Ansible Galaxy
 ```
 
