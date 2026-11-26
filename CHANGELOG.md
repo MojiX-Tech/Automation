@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2
+
+- README: install first, then a table of the roles with the name to use for each.
+
 ## 1.2.1
 
 - README: install from Ansible Galaxy.
