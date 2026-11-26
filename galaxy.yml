@@ -1,7 +1,7 @@
 ---
 namespace: mojix_tech
 name: automation
-version: 1.2.2
+version: 1.2.3
 readme: README.md
 authors:
   - MojiX-Tech
@@ -17,5 +17,7 @@ repository: https://github.com/MojiX-Tech/Automation
 issues: https://github.com/MojiX-Tech/Automation/issues
 build_ignore:
   - .git
+  - .github
   - .gitignore
+  - .yamllint
   - "*.tar.gz"

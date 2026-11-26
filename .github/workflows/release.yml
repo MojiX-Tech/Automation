@@ -1,0 +1,29 @@
+---
+# A version tag (v1.2.3) publishes that version to Ansible Galaxy.
+name: release
+on:
+  push:
+    tags: ["v*"]
+jobs:
+  galaxy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ansible-core
+        run: pip install ansible-core
+      - name: The tag must be the version in galaxy.yml
+        run: |
+          version=$(sed -n 's/^version: *//p' galaxy.yml)
+          if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match version ${version} in galaxy.yml"
+            exit 1
+          fi
+      - name: Build
+        run: ansible-galaxy collection build
+      - name: Publish to Ansible Galaxy
+        env:
+          GALAXY_API_KEY: ${{ secrets.GALAXY_API_KEY }}
+        run: ansible-galaxy collection publish mojix_tech-automation-*.tar.gz --token "${GALAXY_API_KEY}"

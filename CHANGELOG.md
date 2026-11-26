@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.3
+
+- Automatic checks on every push; a version tag publishes the collection to Ansible Galaxy.
+
 ## 1.2.2
 
 - README: install first, then a table of the roles with the name to use for each.

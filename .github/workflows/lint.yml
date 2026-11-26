@@ -1,0 +1,24 @@
+---
+name: lint
+on: [push, pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the tools
+        run: pip install ansible-core ansible-lint yamllint
+      - name: yamllint
+        run: yamllint .
+      - name: ansible-lint
+        run: ansible-lint
+      - name: Playbooks pass the syntax check
+        run: |
+          for playbook in playbooks/*.yml; do
+            ansible-playbook -i localhost, "${playbook}" --syntax-check
+          done
+      - name: The collection builds
+        run: ansible-galaxy collection build

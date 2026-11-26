@@ -45,7 +45,7 @@ Each role's README lists its variables and says what it changes on the host.
 A fixed version:
 
 ```bash
-ansible-galaxy collection install mojix_tech.automation:1.2.2
+ansible-galaxy collection install mojix_tech.automation:1.2.3
 ```
 
 Straight from GitHub, without Ansible Galaxy:
@@ -77,6 +77,7 @@ roles/<role>/           one directory per role, each with its own README
 playbooks/<role>.yml    one playbook per role, named like the role
 ansible.cfg             lets the playbooks find the roles in a checkout
 galaxy.yml              collection name and version
+.github/workflows/      checks on every push; a version tag publishes to Ansible Galaxy
 ```
 
 A new role goes into `roles/<name>/` with `defaults/`, `tasks/`, `meta/main.yml` and a README,
